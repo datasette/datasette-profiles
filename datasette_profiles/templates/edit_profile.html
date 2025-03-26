@@ -134,10 +134,23 @@ textarea {
     </div>
     
     <div class="form-group">
-        <label for="avatar">Avatar</label>
-        <avatar-editor></avatar-editor>
+      <label for="avatar">Avatar</label>
+         {% if avatar_url %}
+         <p><strong>Current avatar:</strong></p>
+         <img src="{{ avatar_url }}" alt="Current avatar" width="100" height="100" style="border-radius: 4px; margin-bottom: 10px; display: block;">
+         <div style="margin-bottom: 15px;">
+             <input type="checkbox" id="delete_avatar" name="delete_avatar" value="1">
+             <label for="delete_avatar" style="display: inline; font-weight: normal;">Delete current avatar</label>
+         </div>
+         <p><strong>Upload a new avatar to replace it:</strong></p>
+         {% endif %}
+         <avatar-editor
+             target-form-input="#avatar_input"
+             avatar-width="200"
+             avatar-height="200"
+         ></avatar-editor>
+         <input type="hidden" name="avatar_data_url" id="avatar_input">
     </div>
-    
     <button type="submit" class="btn btn-primary">Save Profile</button>
 </form>
 {% endblock %}

@@ -1,0 +1,105 @@
+{% extends "base.html" %}
+
+{% block title %}Profiles{% endblock %}
+
+{% block extra_head %}
+<style>
+.profiles-list {
+  list-style: none;
+  padding: 0;
+  max-width: 700px;
+  margin: 20px auto;
+}
+
+.profile-list-item {
+  display: flex;
+  align-items: center;
+  padding: 15px;
+  border: 1px solid #eee;
+  border-radius: 6px;
+  margin-bottom: 10px;
+  background-color: #fff;
+  transition: background-color 0 xbk.2s;
+}
+.profile-list-item:hover {
+    background-color: #f9f9f9;
+}
+
+.profile-list-avatar img {
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  object-fit: cover;
+  margin-right: 15px;
+}
+.profile-list-avatar .placeholder {
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  background-color: #e0e0e0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #aaa;
+  font-size: 24px;
+  font-weight: bold;
+  margin-right: 15px;
+}
+
+.profile-list-details {
+  flex-grow: 1;
+}
+
+.profile-list-name {
+  font-weight: bold;
+  font-size: 1.1em;
+  margin-bottom: 3px;
+  color: #333;
+}
+.profile-list-name a {
+    color: inherit;
+    text-decoration: none;
+}
+.profile-list-name a:hover {
+    text-decoration: underline;
+    color: #0056b3;
+}
+
+.profile-list-title {
+  font-size: 0.95em;
+  color: #666;
+}
+
+</style>
+{% endblock %}
+
+{% block content %}
+<h1>Profiles</h1>
+
+{% if profiles %}
+  <ul class="profiles-list">
+    {% for profile in profiles %}
+      <li class="profile-list-item">
+        <div class="profile-list-avatar">
+          {% if profile.avatar_url %}
+            <img src="{{ profile.avatar_url }}" alt="{{ profile.name }}'s avatar">
+          {% else %}
+            <div class="placeholder">{{ profile.name[0]|upper }}</div>
+          {% endif %}
+        </div>
+        <div class="profile-list-details">
+          <div class="profile-list-name">
+            <a href="{{ profile.view_url }}">{{ profile.name }}</a>
+          </div>
+          {% if profile.title %}
+            <div class="profile-list-title">{{ profile.title }}</div>
+          {% endif %}
+        </div>
+      </li>
+    {% endfor %}
+  </ul>
+{% else %}
+  <p>No profiles found.</p>
+{% endif %}
+
+{% endblock %}

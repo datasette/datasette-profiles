@@ -15,7 +15,13 @@ datasette install datasette-profiles
 ```
 ## Usage
 
-Usage instructions go here.
+Adds the ability for users to view profiles and edit their profile, from options in the main application menu.
+
+Stores data in the internal database, so Datasette needs to be run with the `--internal internal.db` option.
+
+## Plugin hook
+
+This plugin adds a plugin hook: `bottom_profile(datasette, request, profile_actor)`. Other plugins can use this to return HTML to be included at the bottom of the public user profile page - or return an `async def` function that returns that HTML.
 
 ## Development
 

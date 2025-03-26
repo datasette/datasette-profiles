@@ -3,7 +3,12 @@ import re
 import binascii
 from datasette import hookimpl, Response, Forbidden, NotFound
 from datasette.utils.asgi import Request
+from datasette.utils import make_slot_function
 from urllib.parse import quote
+from datasette.plugins import pm
+from . import hookspecs
+
+pm.add_hookspecs(hookspecs)
 
 
 CREATE_SQL = """
@@ -349,6 +354,9 @@ async def view_profile(request: Request, datasette):
                 "profile": profile_data,
                 "avatar_url": avatar_url,
                 "profile_bio": profile_data["bio"],
+                "bottom_profile": make_slot_function(
+                    "bottom_profile", datasette, request, profile_actor=profile_data
+                ),
             },
             request=request,
         )

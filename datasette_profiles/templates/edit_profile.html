@@ -1,0 +1,143 @@
+{% extends "base.html" %}
+
+{% block title %}Edit your profile{% endblock %}
+
+{% block extra_head %}
+<script src="{{ urls.static_plugins("datasette_profiles", "avatar-web-component.js") }}"></script>
+<style>
+
+.form-group {
+  margin-bottom: 20px;
+  position: relative;
+}
+
+label {
+  display: block;
+  margin-bottom: 6px;
+  font-weight: 500;
+}
+
+input[type="text"],
+input[type="email"],
+avatar-editor,
+textarea {
+  width: 100%;
+  max-width: 450px;
+  padding: 12px;
+  font-size: 16px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+avatar-editor {
+  margin: 10px 0;
+}
+
+input:focus,
+textarea:focus {
+  outline: none;
+  border-color: #4a90e2;
+  box-shadow: 0 0 0 3px rgba(74, 144, 226, 0.1);
+}
+
+textarea {
+  min-height: 120px;
+  resize: vertical;
+}
+
+
+.btn {
+  display: inline-block;
+  padding: 12px 20px;
+  font-size: 16px;
+  font-weight: 500;
+  text-align: center;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background-color 0.2s, transform 0.1s;
+}
+
+.btn-primary {
+  background-color: #4a90e2;
+  color: white;
+}
+
+.btn-secondary {
+  background-color: #e2e2e2;
+  color: #333;
+}
+
+.btn:hover {
+  opacity: 0.9;
+}
+
+.btn:active {
+  transform: scale(0.98);
+}
+
+.required label:after {
+  content: "*";
+  color: #e25c5c;
+  margin-left: 4px;
+}
+
+.help-text {
+  font-size: 14px;
+  color: #666;
+  margin-top: 5px;
+}
+
+@media (max-width: 768px) {
+  input[type="text"],
+  input[type="email"],
+  textarea,
+  .btn {
+    max-width: 100%;
+    font-size: 16px;
+    padding: 10px;
+  }
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<h1>Edit your profile</h1>
+
+<form action="{{ request.path }}" method="post">
+    <input type="hidden" name="csrftoken" value="{{ csrftoken() }}">
+    
+    <div class="form-group">
+        <label for="name">Display name</label>
+        <input type="text" id="name" name="name" value="{{ profile.name }}" class="form-control">
+    </div>
+    
+    <div class="form-group">
+        <label for="title">Job title / one-line bio</label>
+        <input type="text" id="title" name="title" value="{{ profile.title }}" class="form-control">
+    </div>
+    
+    <div class="form-group">
+        <label for="profile_slug">Custom profile slug (optional)</label>
+        <input type="text" id="profile_slug" name="profile_slug" value="{{ profile.profile_slug or '' }}" class="form-control">
+        <p class="help-text">Use only letters, numbers, hyphens, and underscores</p>
+    </div>
+    
+    <div class="form-group">
+        <label for="email">Email (visible to other members)</label>
+        <input type="email" id="email" name="email" value="{{ profile.email }}" class="form-control">
+    </div>
+    
+    <div class="form-group">
+        <label for="bio">Bio (URLs will become links)</label>
+        <textarea id="bio" name="bio" class="form-control" rows="5">{{ profile.bio }}</textarea>
+    </div>
+    
+    <div class="form-group">
+        <label for="avatar">Avatar</label>
+        <avatar-editor></avatar-editor>
+    </div>
+    
+    <button type="submit" class="btn btn-primary">Save Profile</button>
+</form>
+{% endblock %}

@@ -1,0 +1,39 @@
+[project]
+name = "datasette-profiles"
+version = "0.1"
+description = "Editable user profile pages for Datasette"
+readme = "README.md"
+authors = [{name = "Simon Willison"}]
+license = {text = "Apache-2.0"}
+classifiers=[
+    "Framework :: Datasette",
+    "License :: OSI Approved :: Apache Software License"
+]
+requires-python = ">=3.9"
+dependencies = [
+    "datasette>=1.0a17"
+]
+
+[build-system]
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta"
+
+[project.urls]
+Homepage = "https://github.com/datasette/datasette-profiles"
+Changelog = "https://github.com/datasette/datasette-profiles/releases"
+Issues = "https://github.com/datasette/datasette-profiles/issues"
+CI = "https://github.com/datasette/datasette-profiles/actions"
+
+[project.entry-points.datasette]
+profiles = "datasette_profiles"
+
+[project.optional-dependencies]
+test = ["pytest", "pytest-asyncio"]
+
+[tool.pytest.ini_options]
+asyncio_mode = "strict"
+asyncio_default_fixture_loop_scope = "function"
+
+[tool.setuptools.package-data]
+datasette_profiles = ["static/*", "templates/*"]
+

@@ -16,7 +16,6 @@ create table if not exists profiles (
     id text primary key,
     name text,
     title text,
-    profile_slug text unique,
     email text,
     bio text
 );
@@ -44,7 +43,6 @@ DATA_URL_RE = re.compile(r"data:image/(jpeg|png|gif|webp);base64,(.*)")
 
 async def edit_profile(request: Request, datasette):
     actor = request.actor
-    # Check if the user is logged in
     if not actor:
         raise Forbidden("You must be logged in to edit your profile")
 
@@ -57,7 +55,7 @@ async def edit_profile(request: Request, datasette):
             """
             select 
                 profiles.id, profiles.name, profiles.title, 
-                profiles.profile_slug, profiles.email, profiles.bio,
+                profiles.email, profiles.bio,
                 profiles_avatars.avatar_image is not null as has_avatar
             from 
                 profiles
@@ -77,153 +75,28 @@ async def edit_profile(request: Request, datasette):
     if request.method == "POST":
         post_vars = await request.post_vars()
         formdata = {
-            "name": (post_vars.get("name") or "").strip(),
-            "title": (post_vars.get("title") or "").strip(),
-            "profile_slug": (post_vars.get("profile_slug") or "").strip() or None,
-            "email": (post_vars.get("email") or "").strip(),
-            "bio": (post_vars.get("bio") or "").strip(),
+            key: (post_vars.get(key) or "").strip()
+            for key in ("name", "title", "email", "bio")
         }
 
-        # Validate slug format if provided
-        if formdata["profile_slug"] and not _is_valid_slug(formdata["profile_slug"]):
-            datasette.add_message(
-                request,
-                "Profile slug must contain only letters, numbers, hyphens and underscores",
-                datasette.ERROR,
-            )
-            # Re-fetch profile data to render form correctly after error
-            profile_data = (
-                dict(profile_row) if profile_exists else _default_profile_data(actor)
-            )
-            avatar_url = (
-                _get_avatar_url(datasette, actor_id)
-                if profile_data.get("has_avatar")
-                else None
-            )
-            return Response.html(
-                await datasette.render_template(
-                    "edit_profile.html",
-                    {
-                        "profile": profile_data,
-                        "avatar_url": avatar_url,
-                        "message": None,  # Error message is already added
-                    },
-                    request=request,
-                )
-            )
-
-        # Check for slug uniqueness if provided and changed/new
-        if formdata["profile_slug"] and (
-            not profile_exists
-            or formdata["profile_slug"] != profile_row["profile_slug"]
-        ):
-            existing = (
-                await internal_db.execute(
-                    "select id from profiles where profile_slug = :slug and id != :id",
-                    {"slug": formdata["profile_slug"], "id": actor_id},
-                )
-            ).first()
-
-            if existing:
-                datasette.add_message(
-                    request,
-                    f"Profile slug '{formdata['profile_slug']}' is already in use",
-                    datasette.ERROR,
-                )
-                # Re-fetch profile data to render form correctly after error
-                profile_data = (
-                    dict(profile_row)
-                    if profile_exists
-                    else _default_profile_data(actor)
-                )
-                avatar_url = (
-                    _get_avatar_url(datasette, actor_id)
-                    if profile_data.get("has_avatar")
-                    else None
-                )
-                # Restore submitted values to the form
-                profile_data.update(formdata)
-                return Response.html(
-                    await datasette.render_template(
-                        "edit_profile.html",
-                        {
-                            "profile": profile_data,
-                            "avatar_url": avatar_url,
-                            "message": None,  # Error message is already added
-                        },
-                        request=request,
-                    )
-                )
-
         save_avatar_data = None
-        # Handle avatar upload if present (from hidden input)
         avatar_data_url = post_vars.get("avatar_data_url")
-        if avatar_data_url and isinstance(avatar_data_url, str):
+        if avatar_data_url:
+            data_url_error = None
             match = DATA_URL_RE.match(avatar_data_url)
-            if match:
-                _image_format, base64_data = match.groups()
+            if not match:
+                data_url_error = "Invalid data URL format"
+            else:
+                base64_data = match.group(1)
                 try:
-                    # Add padding if needed
-                    missing_padding = len(base64_data) % 4
-                    if missing_padding:
-                        base64_data += "=" * (4 - missing_padding)
                     save_avatar_data = base64.b64decode(base64_data)
                 except (binascii.Error, ValueError):
-                    datasette.add_message(
-                        request, "Invalid avatar image data received", datasette.ERROR
-                    )
-                    # Re-render form on error (similar to slug error handling)
-                    profile_data = (
-                        dict(profile_row)
-                        if profile_exists
-                        else _default_profile_data(actor)
-                    )
-                    avatar_url = (
-                        _get_avatar_url(datasette, actor_id)
-                        if profile_data.get("has_avatar")
-                        else None
-                    )
-                    profile_data.update(formdata)  # Keep user's changes
-                    return Response.html(
-                        await datasette.render_template(
-                            "edit_profile.html",
-                            {
-                                "profile": profile_data,
-                                "avatar_url": avatar_url,
-                                "message": None,
-                            },
-                            request=request,
-                        )
-                    )
-            elif (
-                avatar_data_url.strip()
-            ):  # Only error if it's non-empty but invalid format
+                    data_url_error = "Invalid base64 data"
+            if data_url_error:
                 datasette.add_message(
-                    request, "Invalid avatar data URL format", datasette.ERROR
+                    request, "Invalid avatar image data received", datasette.ERROR
                 )
-                # Re-render form on error
-                profile_data = (
-                    dict(profile_row)
-                    if profile_exists
-                    else _default_profile_data(actor)
-                )
-                avatar_url = (
-                    _get_avatar_url(datasette, actor_id)
-                    if profile_data.get("has_avatar")
-                    else None
-                )
-                profile_data.update(formdata)  # Keep user's changes
-                return Response.html(
-                    await datasette.render_template(
-                        "edit_profile.html",
-                        {
-                            "profile": profile_data,
-                            "avatar_url": avatar_url,
-                            "message": None,
-                        },
-                        request=request,
-                    )
-                )
+                return Response.redirect(request.path)
 
         # Handle avatar deletion if requested (and no new avatar provided)
         if post_vars.get("delete_avatar") and not save_avatar_data:
@@ -231,7 +104,6 @@ async def edit_profile(request: Request, datasette):
                 "delete from profiles_avatars where profile_id = :profile_id",
                 {"profile_id": actor_id},
             )
-        # Save new avatar data if provided (this overwrites existing)
         elif save_avatar_data:
             await internal_db.execute_write(
                 """
@@ -248,12 +120,12 @@ async def edit_profile(request: Request, datasette):
             await internal_db.execute_write(
                 """
                 update profiles set
-                name = :name,
-                title = :title,
-                profile_slug = :profile_slug,
-                email = :email,
-                bio = :bio
-                where id = :id
+                    name = :name,
+                    title = :title,
+                    email = :email,
+                    bio = :bio
+                where
+                    id = :id
                 """,
                 {"id": actor_id, **formdata},
             )
@@ -262,9 +134,9 @@ async def edit_profile(request: Request, datasette):
             await internal_db.execute_write(
                 """
                 insert into profiles
-                (id, name, title, profile_slug, email, bio)
+                (id, name, title, email, bio)
                 values
-                (:id, :name, :title, :profile_slug, :email, :bio)
+                (:id, :name, :title, :email, :bio)
                 """,
                 {"id": actor_id, **formdata},
             )
@@ -294,6 +166,7 @@ async def edit_profile(request: Request, datasette):
             "edit_profile.html",
             {
                 "profile": profile_data,
+                "profile_url": datasette.urls.path(f"/~{quote(actor_id)}"),
                 "avatar_url": avatar_url,
                 "message": message,
             },
@@ -308,7 +181,6 @@ def _default_profile_data(actor):
         "id": actor["id"],
         "name": actor.get("name") or actor.get("username") or actor["id"],
         "title": "",
-        "profile_slug": None,
         "email": actor.get("email") or "",
         "bio": "",
         "has_avatar": False,
@@ -329,11 +201,11 @@ async def view_profile(request: Request, datasette):
         await internal_db.execute(
             """
             select 
-                p.id, p.name, p.title, p.profile_slug, p.email, p.bio,
+                p.id, p.name, p.title, p.email, p.bio,
                 pa.avatar_image is not null as has_avatar
             from profiles p
             left join profiles_avatars pa on p.id = pa.profile_id
-            where p.profile_slug = :key or p.id = :key
+            where p.id = :key
             """,
             {"key": profile_key},
         )
@@ -370,7 +242,7 @@ async def list_profiles(request: Request, datasette):
         await internal_db.execute(
             """
             select 
-                p.id, p.name, p.title, p.profile_slug,
+                p.id, p.name, p.title,
                 pa.avatar_image is not null as has_avatar
             from profiles p
             left join profiles_avatars pa on p.id = pa.profile_id
@@ -383,8 +255,7 @@ async def list_profiles(request: Request, datasette):
     for row in profiles_rows:
         profile_dict = dict(row)
         # Determine the correct URL for the profile view
-        profile_key = profile_dict["profile_slug"] or profile_dict["id"]
-        profile_dict["view_url"] = datasette.urls.path(f"/~{quote(profile_key)}")
+        profile_dict["view_url"] = datasette.urls.path(f"/~{quote(profile_dict['id'])}")
         if profile_dict["has_avatar"]:
             profile_dict["avatar_url"] = _get_avatar_url(datasette, profile_dict["id"])
         else:

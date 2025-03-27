@@ -103,6 +103,7 @@ textarea {
 
 {% block content %}
 <h1>Edit your profile</h1>
+<p><a href="{{ profile_url }}">View your profile</a></p>
 
 <form action="{{ request.path }}" method="post">
     <input type="hidden" name="csrftoken" value="{{ csrftoken() }}">
@@ -116,13 +117,7 @@ textarea {
         <label for="title">Job title / one-line bio</label>
         <input type="text" id="title" name="title" value="{{ profile.title }}" class="form-control">
     </div>
-    
-    <div class="form-group">
-        <label for="profile_slug">Custom profile slug (optional)</label>
-        <input type="text" id="profile_slug" name="profile_slug" value="{{ profile.profile_slug or '' }}" class="form-control">
-        <p class="help-text">Use only letters, numbers, hyphens, and underscores</p>
-    </div>
-    
+
     <div class="form-group">
         <label for="email">Email (visible to other members)</label>
         <input type="email" id="email" name="email" value="{{ profile.email }}" class="form-control">

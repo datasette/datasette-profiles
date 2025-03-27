@@ -159,14 +159,14 @@ async def edit_profile(request: Request, datasette):
     # Get avatar URL if it exists
     avatar_url = None
     if profile_data.get("has_avatar"):
-        avatar_url = _get_avatar_url(datasette, actor_id)
+        avatar_url = _get_avatar_url(datasette, str(actor_id))
 
     return Response.html(
         await datasette.render_template(
             "edit_profile.html",
             {
                 "profile": profile_data,
-                "profile_url": datasette.urls.path(f"/~{quote(actor_id)}"),
+                "profile_url": datasette.urls.path(f"/~{quote(str(actor_id))}"),
                 "avatar_url": avatar_url,
                 "message": message,
             },
@@ -217,7 +217,7 @@ async def view_profile(request: Request, datasette):
     profile_data = dict(profile_row)
     avatar_url = None
     if profile_data.get("has_avatar"):
-        avatar_url = _get_avatar_url(datasette, profile_data["id"])
+        avatar_url = _get_avatar_url(datasette, str(profile_data["id"]))
 
     return Response.html(
         await datasette.render_template(
@@ -257,7 +257,9 @@ async def list_profiles(request: Request, datasette):
         # Determine the correct URL for the profile view
         profile_dict["view_url"] = datasette.urls.path(f"/~{quote(profile_dict['id'])}")
         if profile_dict["has_avatar"]:
-            profile_dict["avatar_url"] = _get_avatar_url(datasette, profile_dict["id"])
+            profile_dict["avatar_url"] = _get_avatar_url(
+                datasette, str(profile_dict["id"])
+            )
         else:
             profile_dict["avatar_url"] = None
         profiles_list.append(profile_dict)

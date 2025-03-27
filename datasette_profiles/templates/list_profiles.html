@@ -89,7 +89,7 @@
         </div>
         <div class="profile-list-details">
           <div class="profile-list-name">
-            <a href="{{ profile.view_url }}">{{ profile.name }}</a>
+            <a href="{{ profile.view_url }}">{{ profile.name or profile.id }}</a>
           </div>
           {% if profile.title %}
             <div class="profile-list-title">{{ profile.title }}</div>

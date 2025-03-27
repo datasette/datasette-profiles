@@ -106,7 +106,7 @@
     {% endif %}
   </div>
   <div class="profile-details">
-    <h1>{{ profile.name }}</h1>
+    <h1>{{ profile.name or profile.id }}</h1>
     {% if profile.title %}
       <p class="profile-title">{{ profile.title }}</p>
     {% endif %}

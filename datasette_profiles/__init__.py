@@ -37,6 +37,33 @@ def startup(datasette):
     return inner
 
 
+_track_event_seen_actor_ids = set()
+
+
+@hookimpl
+def permission_allowed(datasette, actor):
+    actor_id = actor.get("id") if actor else None
+    if not actor_id:
+        return
+    if actor_id in _track_event_seen_actor_ids:
+        return
+
+    async def inner():
+        db = datasette.get_internal_database()
+        # Insert into profiles if it doesn't exist
+        await db.execute_write(
+            """
+            insert into profiles (id)
+            values (:id)
+            on conflict (id) do nothing
+            """,
+            {"id": str(actor_id)},
+        )
+        _track_event_seen_actor_ids.add(actor_id)
+
+    return inner
+
+
 # Regular expression to extract base64 data from Data URL
 DATA_URL_RE = re.compile(r"data:image/(jpeg|png|gif|webp);base64,(.*)")
 

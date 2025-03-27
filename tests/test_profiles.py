@@ -3,9 +3,21 @@ import pytest
 
 
 @pytest.mark.asyncio
-async def test_plugin_is_installed():
+async def test_profiles_table_populated_on_visit():
     datasette = Datasette(memory=True)
-    response = await datasette.client.get("/-/plugins.json")
-    assert response.status_code == 200
-    installed_plugins = {p["name"] for p in response.json()}
-    assert "datasette-profiles" in installed_plugins
+    await datasette.invoke_startup()
+    internal_db = datasette.get_internal_database()
+    for actor_id in ("user1", "user2"):
+        assert not (
+            await internal_db.execute(
+                "select count(*) from profiles where id = ?", (actor_id,)
+            )
+        ).single_value()
+        await datasette.client.get(
+            "/", cookies={"ds_actor": datasette.client.actor_cookie({"id": actor_id})}
+        )
+        assert (
+            await internal_db.execute(
+                "select count(*) from profiles where id = ?", (actor_id,)
+            )
+        ).single_value() == 1

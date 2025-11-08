@@ -41,7 +41,8 @@ _track_event_seen_actor_ids = set()
 
 
 @hookimpl
-def permission_allowed(datasette, actor):
+def permission_resources_sql(datasette, actor):
+    # Ensure a profile exists the first time an actor has a permission check
     actor_id = actor.get("id") if actor else None
     if not actor_id:
         return

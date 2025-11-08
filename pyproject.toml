@@ -1,6 +1,6 @@
 [project]
 name = "datasette-profiles"
-version = "0.1a4"
+version = "0.1a5"
 description = "Editable user profile pages for Datasette"
 readme = "README.md"
 authors = [{name = "Simon Willison"}]
